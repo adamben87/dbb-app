@@ -8,10 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Dependencies
-        run: ./autogen.sh
-./configure --enable-debug --with-gui=qt5 --enable-libusb
-make
-sudo make install
-          
+        run: |
+          brew install hidapi qt5 boost
       - name: Build Project
-        run: make
+        run: <your-build-command>
