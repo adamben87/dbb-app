@@ -11,19 +11,22 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          brew install autoconf automake libtool pkg-config hidapi libevent qt5 boost gmp
+          brew install autoconf automake libtool pkg-config hidapi libevent boost gmp openssl@3 qt@5
+          echo "export PATH=$(brew --prefix qt@5)/bin:$PATH" >> $GITHUB_ENV
+          echo "export PKG_CONFIG_PATH=$(brew --prefix qt@5)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
 
       - name: Debug File Existence
         run: |
-          ls -R lib/ || echo "Directory lib/ does not exist"
-          ls -R src/ || echo "Directory src/ does not exist"
           find . -name "univalue_write.cpp" || echo "File not found"
 
-      - name: Clone Univalue (if missing)
+      - name: Replace `sprintf` with `snprintf`
         run: |
-          if [ ! -d "src/univalue" ]; then
-            git clone https://github.com/bitcoin-core/univalue.git src/univalue
-          fi
+          find . -name "univalue_write.cpp" -exec sed -i '' 's/sprintf/snprintf/g' {} +
+
+      - name: Set LDFLAGS Correctly
+        run: |
+          export LDFLAGS="-Wl,-framework,Security -Wl,-framework,CoreServices -Wl,-framework,Foundation -Wl,-framework,ApplicationServices -Wl,-framework,AppKit -Wl,-framework,IOKit"
+          echo "LDFLAGS=$LDFLAGS" >> $GITHUB_ENV
 
       - name: Run autogen.sh
         run: |
@@ -32,13 +35,8 @@ jobs:
 
       - name: Configure Build
         run: |
-          export LDFLAGS="-framework Security -framework CoreServices -framework Foundation -framework ApplicationServices -framework AppKit -framework IOKit"
-          ./configure --with-gui=no LDFLAGS="$LDFLAGS"
+          ./configure --without-gui LDFLAGS="$LDFLAGS"
           make -j$(sysctl -n hw.ncpu)
-
-      - name: Fix `sprintf` Usage
-        run: |
-          find . -name "univalue_write.cpp" -exec sed -i '' 's/sprintf/snprintf/g' {} +
 
       - name: Compile Code
         run: make -j$(sysctl -n hw.ncpu)
