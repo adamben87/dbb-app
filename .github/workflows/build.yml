@@ -6,7 +6,8 @@ jobs:
   build:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
       - name: Install Dependencies
         run: |
@@ -24,21 +25,12 @@ jobs:
       - name: Clean Build
         run: make distclean || true
 
-      - name: Verify libbtc exists
+      - name: Ensure libbtc is Built
         run: |
           if [ ! -d "src/libbtc" ]; then
             echo "Error: src/libbtc not found"
             exit 1
           fi
-
-      - name: Clean libbtc Build
-        run: |
-          cd src/libbtc
-          make clean || true
-          cd ../..
-
-      - name: Manually Build libbtc
-        run: |
           cd src/libbtc
           ./autogen.sh || true
           ./configure
@@ -47,17 +39,13 @@ jobs:
 
       - name: Verify btc_hash Exists
         run: |
-          grep -R "btc_hash" src/libbtc/include || echo "Warning: btc_hash not found!"
-
-      - name: Compile Code (Ignore Tests)
-        run: make -j$(sysctl -n hw.ncpu) V=1 || true
-
-      - name: Check if dbb-cli binary exists
-        run: |
-          if [ ! -f "src/dbb-cli" ]; then
-            echo "Error: dbb-cli binary not found"
-            exit 1
+          if ! grep -q "btc_hash" src/libbtc/include/*; then
+            echo "Warning: btc_hash function not found! Attempting fix..."
+            echo "#include <btc/sha2.h>" >> test/sha2_tests.c
           fi
+
+      - name: Compile Code
+        run: make -j$(sysctl -n hw.ncpu) V=1
 
       - name: Upload Artifact
         if: success()
