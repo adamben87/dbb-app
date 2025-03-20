@@ -1,0 +1,19 @@
+name: Build DBB CLI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: |
+          brew install hidapi qt5 boost
+      - name: Build Project
+        run: make
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: dbb-cli
+          path: /Users/Adam/Documents/GitHub/dbb-app
