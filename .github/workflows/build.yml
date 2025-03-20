@@ -1,6 +1,6 @@
 name: Build DBB CLI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -22,19 +22,7 @@ jobs:
         run: |
           ./configure --with-gui=no LDFLAGS="-framework CoreFoundation -framework IOKit"
 
-      - name: Ensure libbtc is Built
-        run: |
-          if [ ! -d "src/libbtc" ]; then
-            echo "Error: src/libbtc not found"
-            exit 1
-          fi
-          cd src/libbtc
-          ./autogen.sh || true
-          ./configure
-          make V=1
-          cd ../..
-
-      - name: Fix btc_hash Declaration in sha2_tests.c
+      - name: Fix Missing `btc_hash` Declaration in `sha2_tests.c`
         run: |
           if ! grep -q "#include <btc/sha2.h>" test/sha2_tests.c; then
             echo "Fixing missing btc_hash function..."
@@ -55,4 +43,3 @@ jobs:
         with:
           name: dbb-cli
           path: src/dbb-cli
-
