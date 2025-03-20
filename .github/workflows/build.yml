@@ -22,17 +22,30 @@ jobs:
         run: |
           ./configure --with-gui=no LDFLAGS="-framework CoreFoundation -framework IOKit"
 
-      - name: Fix Missing `btc_hash` Declaration in `sha2_tests.c`
+      - name: Debug File Paths
         run: |
-          if ! grep -q "#include <btc/sha2.h>" test/sha2_tests.c; then
-            echo "Fixing missing btc_hash function..."
-            sed -i.bak '1i\
-            #include <btc/sha2.h>' test/sha2_tests.c
+          echo "Listing files in the test directory..."
+          ls -R test || echo "No test directory found."
+          echo "Searching for sha2_tests.c..."
+          find . -name "sha2_tests.c" || echo "sha2_tests.c not found!"
+
+      - name: Fix Missing `btc_hash` Declaration (If File Exists)
+        run: |
+          FILE_PATH=$(find . -name "sha2_tests.c")
+          if [ -n "$FILE_PATH" ]; then
+            echo "Fixing missing btc_hash function in $FILE_PATH..."
+            if ! grep -q "#include <btc/sha2.h>" "$FILE_PATH"; then
+              sed -i.bak '1i\
+              #include <btc/sha2.h>' "$FILE_PATH"
+            fi
+          else
+            echo "Error: sha2_tests.c not found, skipping fix."
+            exit 1
           fi
 
       - name: Fix Deprecated Function Declarations
         run: |
-          find test -name "*.c" -type f -exec sed -i.bak -E 's/(void [a-zA-Z0-9_]+\(\))/\1 void/g' {} \;
+          find . -name "*.c" -type f -exec sed -i.bak -E 's/(void [a-zA-Z0-9_]+\(\))/\1 void/g' {} \;
 
       - name: Compile Code
         run: make -j$(sysctl -n hw.ncpu) V=1
