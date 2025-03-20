@@ -13,7 +13,7 @@ jobs:
       - name: Build Project
         run: make
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dbb-cli
           path: https://github.com/adamben87/dbb-app/
