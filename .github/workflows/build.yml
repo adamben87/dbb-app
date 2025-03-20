@@ -1,49 +1,46 @@
-name: Build DBB CLI
+name: Build DBB CLI on macOS
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: macos-latest
+
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Install Dependencies
-        run: |
-          brew install autoconf automake libtool pkg-config hidapi libevent boost gmp openssl@3 qt@5
-          echo "export PATH=$(brew --prefix qt@5)/bin:$PATH" >> $GITHUB_ENV
-          echo "export PKG_CONFIG_PATH=$(brew --prefix qt@5)/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+    - name: Install Dependencies
+      run: |
+        brew install automake autoconf libtool pkg-config cmake openssl@3
 
-      - name: Debug File Existence
-        run: |
-          find . -name "univalue_write.cpp" || echo "File not found"
+    - name: Set Environment Variables
+      run: |
+        echo "LDFLAGS=-L/opt/homebrew/opt/openssl@3/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I/opt/homebrew/opt/openssl@3/include" >> $GITHUB_ENV
+        echo "PKG_CONFIG_PATH=/opt/homebrew/opt/openssl@3/lib/pkgconfig" >> $GITHUB_ENV
 
-      - name: Replace `sprintf` with `snprintf`
-        run: |
-          find . -name "univalue_write.cpp" -exec sed -i '' 's/sprintf/snprintf/g' {} +
+    - name: Configure Build
+      run: |
+        ./autogen.sh
+        ./configure --without-gui --disable-maintainer-mode LDFLAGS="$LDFLAGS"
 
-      - name: Set LDFLAGS Correctly
-        run: |
-          export LDFLAGS="-Wl,-framework,Security -Wl,-framework,CoreServices -Wl,-framework,Foundation -Wl,-framework,ApplicationServices -Wl,-framework,AppKit -Wl,-framework,IOKit"
-          echo "LDFLAGS=$LDFLAGS" >> $GITHUB_ENV
+    - name: Compile Project
+      run: make -j$(sysctl -n hw.ncpu)
 
-      - name: Run autogen.sh
-        run: |
-          chmod +x autogen.sh
-          ./autogen.sh
+    - name: Run Tests
+      run: make check
 
-      - name: Configure Build
-        run: |
-          ./configure --without-gui LDFLAGS="$LDFLAGS"
-          make -j$(sysctl -n hw.ncpu)
-
-      - name: Compile Code
-        run: make -j$(sysctl -n hw.ncpu)
-
-      - name: Upload Artifact
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dbb-cli
-          path: src/dbb-cli
+    - name: Upload Artifacts (Optional)
+      uses: actions/upload-artifact@v4
+      with:
+        name: dbb-cli-macos-build
+        path: |
+          src/dbb_cli
+          src/.libs/
