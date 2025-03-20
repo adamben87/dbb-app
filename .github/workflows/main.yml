@@ -1,0 +1,14 @@
+name: Build DBB CLI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Dependencies
+        run: |
+          brew install hidapi libevent qt5 boost
+      - name: Build Project
+        run: <your-build-command>
