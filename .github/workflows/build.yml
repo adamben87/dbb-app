@@ -21,13 +21,8 @@ jobs:
       - name: Clean Build
         run: make clean || true
 
-      - name: Build Dependencies
-        run: |
-          cd src
-          make libbtc.la
-
       - name: Compile Code
-        run: make V=1
+        run: make -j$(sysctl -n hw.ncpu) V=1
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
