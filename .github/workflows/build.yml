@@ -41,7 +41,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: dbb-cli-macos-build
-        path: |
+        path: src/dbb-cli
           src/dbb_cli
           src/.libs/
 
